@@ -1,59 +1,102 @@
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
-import type { FlipbookProject } from '@/store/flipbook-store'
+import type { Magazine, MagazineConfig } from '@/services/api'
 
+/**
+ * Export Utils
+ *
+ * Generate downloadable flipbook packages.
+ * Now works with Cloudinary URLs instead of base64 data.
+ */
+
+/**
+ * Generate single HTML file package
+ *
+ * Downloads images from Cloudinary and embeds as base64.
+ */
 export async function generateHTMLPackage(
-  project: FlipbookProject,
+  project: Magazine,
   onProgress?: (progress: number) => void
 ): Promise<void> {
-  onProgress?.(10)
+  onProgress?.(5)
 
   const { config, pages, name } = project
 
-  // Generate page images as base64
-  const pageImages = pages
-    .filter((p) => p.imageData)
-    .map((p) => p.imageData as string)
+  // Download and convert images to base64
+  onProgress?.(10)
+  const pageImages: string[] = []
 
-  onProgress?.(30)
+  for (let i = 0; i < pages.length; i++) {
+    const page = pages[i]
+    try {
+      // Fetch image from Cloudinary
+      const response = await fetch(page.imageUrl)
+      const blob = await response.blob()
+
+      // Convert to base64
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.readAsDataURL(blob)
+      })
+
+      pageImages.push(base64)
+    } catch (error) {
+      console.error(`Failed to fetch page ${i + 1}:`, error)
+      // Use placeholder for failed pages
+      pageImages.push('')
+    }
+
+    onProgress?.(10 + (i / pages.length) * 60)
+  }
+
+  onProgress?.(70)
 
   const htmlContent = generateFlipbookHTML(name, config, pageImages)
 
-  onProgress?.(80)
+  onProgress?.(90)
 
   // Create and download the HTML file
   const blob = new Blob([htmlContent], { type: 'text/html' })
-  saveAs(blob, `${name.replace(/[^a-z0-9]/gi, '_')}_flipbook.html`)
+  saveAs(blob, `${sanitizeFilename(name)}_flipbook.html`)
 
   onProgress?.(100)
 }
 
+/**
+ * Generate ZIP package with separate files
+ */
 export async function generateZipPackage(
-  project: FlipbookProject,
+  project: Magazine,
   onProgress?: (progress: number) => void
 ): Promise<void> {
   const zip = new JSZip()
   const { config, pages, name } = project
 
-  onProgress?.(10)
+  onProgress?.(5)
 
-  // Create images folder and add images
+  // Create images folder and download images
   const imagesFolder = zip.folder('images')
   const imageNames: string[] = []
 
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i]
-    if (page.imageData) {
-      // Convert base64 to blob
-      const base64Data = page.imageData.split(',')[1]
+    try {
+      // Fetch image from Cloudinary
+      const response = await fetch(page.imageUrl)
+      const blob = await response.blob()
+
       const imageName = `page_${(i + 1).toString().padStart(3, '0')}.jpg`
       imageNames.push(imageName)
-      imagesFolder?.file(imageName, base64Data, { base64: true })
+      imagesFolder?.file(imageName, blob)
+    } catch (error) {
+      console.error(`Failed to fetch page ${i + 1}:`, error)
     }
-    onProgress?.(10 + (i / pages.length) * 40)
+
+    onProgress?.(5 + (i / pages.length) * 50)
   }
 
-  onProgress?.(50)
+  onProgress?.(55)
 
   // Generate HTML with relative image paths
   const htmlContent = generateFlipbookHTML(
@@ -75,23 +118,37 @@ export async function generateZipPackage(
   const jsContent = generateFlipbookJS(config, imageNames.length)
   zip.file('script.js', jsContent)
 
-  onProgress?.(90)
+  onProgress?.(85)
 
   // Generate and download ZIP
   const content = await zip.generateAsync({ type: 'blob' })
-  saveAs(content, `${name.replace(/[^a-z0-9]/gi, '_')}_flipbook.zip`)
+  saveAs(content, `${sanitizeFilename(name)}_flipbook.zip`)
 
   onProgress?.(100)
 }
 
+/**
+ * Sanitize filename
+ */
+function sanitizeFilename(name: string): string {
+  return name.replace(/[^a-z0-9]/gi, '_').toLowerCase()
+}
+
+/**
+ * Generate HTML content
+ */
 function generateFlipbookHTML(
   title: string,
-  config: FlipbookProject['config'],
+  config: MagazineConfig,
   images: string[],
   embedded: boolean = true
 ): string {
-  const styles = embedded ? `<style>${generateFlipbookCSS(config)}</style>` : '<link rel="stylesheet" href="styles.css">'
-  const scripts = embedded ? `<script>${generateFlipbookJS(config, images.length)}</script>` : '<script src="script.js"></script>'
+  const styles = embedded
+    ? `<style>${generateFlipbookCSS(config)}</style>`
+    : '<link rel="stylesheet" href="styles.css">'
+  const scripts = embedded
+    ? `<script>${generateFlipbookJS(config, images.length)}</script>`
+    : '<script src="script.js"></script>'
 
   const pageElements = images
     .map(
@@ -138,7 +195,10 @@ function generateFlipbookHTML(
 </html>`
 }
 
-function generateFlipbookCSS(config: FlipbookProject['config']): string {
+/**
+ * Generate CSS content
+ */
+function generateFlipbookCSS(config: MagazineConfig): string {
   return `
 * {
   margin: 0;
@@ -274,10 +334,10 @@ body {
 `
 }
 
-function generateFlipbookJS(
-  config: FlipbookProject['config'],
-  totalPages: number
-): string {
+/**
+ * Generate JS content
+ */
+function generateFlipbookJS(config: MagazineConfig, totalPages: number): string {
   return `
 let currentPage = 0;
 const totalPages = ${totalPages};
@@ -311,7 +371,6 @@ function updateDisplay() {
     pageInfo.textContent = (currentPage + 1) + ' / ' + totalPages;
   }
 
-  // Update button states
   document.querySelector('.prev').disabled = currentPage === 0;
   document.querySelector('.next').disabled = currentPage >= totalPages - (isDoubleLayout ? 2 : 1);
 }
@@ -332,13 +391,11 @@ function prevPage() {
   }
 }
 
-// Keyboard navigation
 document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowRight' || e.key === 'PageDown') nextPage();
   if (e.key === 'ArrowLeft' || e.key === 'PageUp') prevPage();
 });
 
-// Initialize
 document.addEventListener('DOMContentLoaded', updateDisplay);
 `
 }

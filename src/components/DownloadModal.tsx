@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Download, FileArchive, FileCode, Loader2, X } from 'lucide-react'
+import { Download, FileArchive, FileCode, Loader2, X, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
 import { useFlipbookStore } from '@/store/flipbook-store'
 import { generateHTMLPackage, generateZipPackage } from '@/lib/export-utils'
 
@@ -18,6 +17,7 @@ export function DownloadModal({ isOpen, onClose }: DownloadModalProps) {
   const [isExporting, setIsExporting] = useState(false)
   const [exportProgress, setExportProgress] = useState(0)
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat | null>(null)
+  const [exportComplete, setExportComplete] = useState(false)
   const { currentProject } = useFlipbookStore()
 
   const handleExport = async (format: ExportFormat) => {
@@ -26,6 +26,7 @@ export function DownloadModal({ isOpen, onClose }: DownloadModalProps) {
     setSelectedFormat(format)
     setIsExporting(true)
     setExportProgress(0)
+    setExportComplete(false)
 
     try {
       if (format === 'html') {
@@ -39,11 +40,15 @@ export function DownloadModal({ isOpen, onClose }: DownloadModalProps) {
       }
 
       setExportProgress(100)
+      setExportComplete(true)
+
+      // Reset after showing success
       setTimeout(() => {
         setIsExporting(false)
         setSelectedFormat(null)
         setExportProgress(0)
-      }, 1000)
+        setExportComplete(false)
+      }, 2000)
     } catch (error) {
       console.error('Export failed:', error)
       setIsExporting(false)
@@ -63,7 +68,7 @@ export function DownloadModal({ isOpen, onClose }: DownloadModalProps) {
       >
         {/* Backdrop */}
         <motion.div
-          className="absolute inset-0 bg-black/50"
+          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -72,15 +77,20 @@ export function DownloadModal({ isOpen, onClose }: DownloadModalProps) {
 
         {/* Modal */}
         <motion.div
-          className="relative bg-background rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden"
+          className="relative bg-[#0f0f15] border border-blue-500/20 rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden"
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-lg font-semibold">Download Flipbook</h2>
-            <Button variant="ghost" size="icon" onClick={onClose}>
+          <div className="flex items-center justify-between p-4 border-b border-blue-500/20">
+            <h2 className="text-lg font-semibold text-white">Download Flipbook</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="text-white/70 hover:text-white hover:bg-white/10"
+            >
               <X className="w-4 h-4" />
             </Button>
           </div>
@@ -90,58 +100,73 @@ export function DownloadModal({ isOpen, onClose }: DownloadModalProps) {
             {isExporting ? (
               <div className="py-8 space-y-4">
                 <div className="flex justify-center">
-                  <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                  {exportComplete ? (
+                    <CheckCircle className="w-12 h-12 text-green-400" />
+                  ) : (
+                    <Loader2 className="w-12 h-12 animate-spin text-blue-400" />
+                  )}
                 </div>
                 <div className="text-center">
-                  <p className="font-medium">
-                    Generating {selectedFormat?.toUpperCase()} package...
+                  <p className="font-medium text-white">
+                    {exportComplete
+                      ? 'Download Complete!'
+                      : `Generating ${selectedFormat?.toUpperCase()} package...`}
                   </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    This may take a moment
-                  </p>
+                  {!exportComplete && (
+                    <p className="text-sm text-blue-200/50 mt-1">
+                      Downloading images from cloud...
+                    </p>
+                  )}
                 </div>
-                <Progress value={exportProgress} className="w-full" />
-                <p className="text-xs text-center text-muted-foreground">
+                <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${exportProgress}%` }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
+                <p className="text-xs text-center text-blue-200/50">
                   {Math.round(exportProgress)}%
                 </p>
               </div>
             ) : (
               <div className="space-y-3">
                 <Card
-                  className="cursor-pointer hover:border-primary transition-colors"
+                  className="cursor-pointer bg-white/5 border-blue-500/20 hover:border-blue-500/50 transition-colors"
                   onClick={() => handleExport('html')}
                 >
                   <CardContent className="p-4 flex items-start gap-4">
-                    <div className="p-3 bg-primary/10 rounded-lg">
-                      <FileCode className="w-6 h-6 text-primary" />
+                    <div className="p-3 bg-blue-500/20 rounded-lg">
+                      <FileCode className="w-6 h-6 text-blue-400" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-medium">HTML Package</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Download as a single HTML file with embedded assets.
+                      <h3 className="font-medium text-white">HTML Package</h3>
+                      <p className="text-sm text-blue-200/50">
+                        Single HTML file with embedded images.
                         Perfect for quick sharing.
                       </p>
                     </div>
-                    <Download className="w-5 h-5 text-muted-foreground" />
+                    <Download className="w-5 h-5 text-blue-200/50" />
                   </CardContent>
                 </Card>
 
                 <Card
-                  className="cursor-pointer hover:border-primary transition-colors"
+                  className="cursor-pointer bg-white/5 border-purple-500/20 hover:border-purple-500/50 transition-colors"
                   onClick={() => handleExport('zip')}
                 >
                   <CardContent className="p-4 flex items-start gap-4">
-                    <div className="p-3 bg-primary/10 rounded-lg">
-                      <FileArchive className="w-6 h-6 text-primary" />
+                    <div className="p-3 bg-purple-500/20 rounded-lg">
+                      <FileArchive className="w-6 h-6 text-purple-400" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-medium">ZIP Package</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Download as a ZIP file with HTML, CSS, JS, and images
-                        separated. Best for hosting.
+                      <h3 className="font-medium text-white">ZIP Package</h3>
+                      <p className="text-sm text-purple-200/50">
+                        HTML, CSS, JS, and images separated.
+                        Best for web hosting.
                       </p>
                     </div>
-                    <Download className="w-5 h-5 text-muted-foreground" />
+                    <Download className="w-5 h-5 text-purple-200/50" />
                   </CardContent>
                 </Card>
               </div>
@@ -149,10 +174,9 @@ export function DownloadModal({ isOpen, onClose }: DownloadModalProps) {
           </div>
 
           {/* Footer */}
-          <div className="p-4 border-t bg-muted/30">
-            <p className="text-xs text-muted-foreground text-center">
-              {currentProject?.totalPages ?? 0} pages •{' '}
-              {currentProject?.name ?? 'Untitled'}
+          <div className="p-4 border-t border-blue-500/20 bg-white/5">
+            <p className="text-xs text-blue-200/50 text-center">
+              {currentProject?.totalPages ?? 0} pages • {currentProject?.name ?? 'Untitled'}
             </p>
           </div>
         </motion.div>

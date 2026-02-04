@@ -1,0 +1,168 @@
+# =====================
+# DEPENDENCIES
+# =====================
+node_modules/
+.pnp
+.pnp.js
+.yarn/
+
+# =====================
+# BUILD OUTPUTS
+# =====================
+dist/
+build/
+out/
+.output/
+
+# =====================
+# ENVIRONMENT FILES
+# =====================
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+.env*.local
+
+# =====================
+# LOGS
+# =====================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# =====================
+# RUNTIME DATA
+# =====================
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# =====================
+# IDE / EDITORS
+# =====================
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+.project
+.classpath
+.settings/
+*.code-workspace
+
+# =====================
+# OS FILES
+# =====================
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# =====================
+# TESTING
+# =====================
+coverage/
+.nyc_output/
+*.lcov
+.jest/
+
+# =====================
+# TYPESCRIPT
+# =====================
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+tsconfig.node.tsbuildinfo
+
+# =====================
+# VITE
+# =====================
+*.local
+.vite/
+
+# =====================
+# CACHE
+# =====================
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+.prettiercache
+*.cache
+
+# =====================
+# TEMPORARY FILES
+# =====================
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# =====================
+# DEBUG
+# =====================
+.debug/
+debug.log
+
+# =====================
+# CLAUDE CODE
+# =====================
+.claude/
+
+# =====================
+# NETLIFY (Frontend Hosting)
+# =====================
+.netlify/
+
+# =====================
+# RENDER (Backend Hosting)
+# =====================
+.render/
+
+# =====================
+# CLOUDINARY
+# =====================
+.cloudinary/
+
+# =====================
+# MONGODB
+# =====================
+.mongodb/
+mongo-data/
+
+# =====================
+# UPLOADS (Local Dev)
+# =====================
+uploads/
+temp-uploads/
+
+# =====================
+# BACKEND (Future Node.js)
+# =====================
+server/node_modules/
+server/dist/
+server/.env
+server/uploads/
+
+# =====================
+# MISC
+# =====================
+*.pem
+*.key
+*.cert
+.vercel/
+.turbo/

@@ -1,6 +1,15 @@
 import * as pdfjsLib from 'pdfjs-dist'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
-import type { PDFPage } from '@/store/flipbook-store'
+
+// Local page type for client-side processing (legacy)
+export interface LocalPDFPage {
+  pageNumber: number;
+  imageData: string | null;
+  width: number;
+  height: number;
+  isLoading: boolean;
+  isRendered: boolean;
+}
 
 // Set up the worker - use local file copied from node_modules
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
@@ -28,13 +37,13 @@ export class PDFProcessor {
     }
   }
 
-  async loadDocument(source: string | ArrayBuffer): Promise<{ totalPages: number; pages: PDFPage[] }> {
+  async loadDocument(source: string | ArrayBuffer): Promise<{ totalPages: number; pages: LocalPDFPage[] }> {
     try {
       const loadingTask = pdfjsLib.getDocument(source)
       this.document = await loadingTask.promise
 
       const totalPages = this.document.numPages
-      const pages: PDFPage[] = []
+      const pages: LocalPDFPage[] = []
 
       // Get page dimensions for all pages
       for (let i = 1; i <= totalPages; i++) {

@@ -1,10 +1,10 @@
 import { useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import type { PDFPage } from '@/store/flipbook-store'
+import type { PageData } from '@/services/api'
 
 interface PageThumbnailsProps {
-  pages: PDFPage[]
+  pages: PageData[]
   currentPage: number
   onPageSelect: (page: number) => void
   isDoubleLayout: boolean
@@ -64,9 +64,9 @@ export function PageThumbnails({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              {page.imageData ? (
+              {page.imageUrl ? (
                 <img
-                  src={page.imageData}
+                  src={page.imageUrl}
                   alt={`Page ${page.pageNumber}`}
                   className="w-full h-full object-cover"
                 />

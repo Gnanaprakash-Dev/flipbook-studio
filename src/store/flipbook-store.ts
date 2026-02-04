@@ -61,7 +61,8 @@ interface FlipbookState {
   updatePage: (pageNumber: number, data: Partial<PDFPage>) => void;
 }
 
-const defaultConfig: MagazineConfig = {
+// Default config exported for use in components
+export const defaultConfig: MagazineConfig = {
   width: 400,
   height: 500,
   flipAnimation: 'soft',
@@ -256,7 +257,7 @@ export const useFlipbookStore = create<FlipbookState>()(
 
       // ========== Legacy Methods (for backward compatibility) ==========
 
-      createNewProject: (name: string, _pdfFile: File) => {
+      createNewProject: (_name: string, _pdfFile: File) => {
         // This is now handled by uploadPdf
         // Keeping for compatibility but it won't be used
         console.warn('createNewProject is deprecated, use uploadPdf instead');
@@ -274,7 +275,7 @@ export const useFlipbookStore = create<FlipbookState>()(
     }),
     {
       name: 'flipbook-storage',
-      partialize: (state) => ({
+      partialize: (_state) => ({
         // Only persist minimal data
         // Don't persist currentProject as it may be stale
       }),

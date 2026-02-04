@@ -6,15 +6,12 @@ import {
   Minimize2,
   Play,
   Pause,
-  Volume2,
-  VolumeX,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useFlipbookStore } from '@/store/flipbook-store'
-import { getPDFProcessor } from '@/lib/pdf-processor'
 import { PageThumbnails } from './PageThumbnails'
-import { MagazineBook, Page, PageFlipInstance, FlipEvent, StateEvent } from 'react-magazine'
+import { MagazineBook, PageFlipInstance, FlipEvent, StateEvent } from 'react-magazine'
 import 'react-magazine/styles.css'
 
 interface FlipbookViewerProps {
@@ -35,44 +32,11 @@ export function FlipbookViewer({ className }: FlipbookViewerProps) {
     setCurrentPage,
     setIsFlipping,
     setIsFullscreen,
-    updatePage,
   } = useFlipbookStore()
 
   const config = currentProject?.config
   const pages = currentProject?.pages ?? []
   const totalPages = currentProject?.totalPages ?? 0
-
-  // Preload adjacent pages
-  useEffect(() => {
-    const preloadPages = async () => {
-      if (!currentProject) return
-
-      const processor = getPDFProcessor()
-      const pagesToPreload = [
-        currentPage - 2,
-        currentPage - 1,
-        currentPage,
-        currentPage + 1,
-        currentPage + 2,
-        currentPage + 3,
-      ].filter((p) => p >= 0 && p < totalPages)
-
-      for (const pageNum of pagesToPreload) {
-        const page = pages.find((p) => p.pageNumber === pageNum + 1)
-        if (page && !page.isRendered && !page.isLoading) {
-          updatePage(pageNum + 1, { isLoading: true })
-          try {
-            const imageData = await processor.renderPage(pageNum + 1)
-            updatePage(pageNum + 1, { imageData, isLoading: false, isRendered: true })
-          } catch (error) {
-            updatePage(pageNum + 1, { isLoading: false })
-          }
-        }
-      }
-    }
-
-    preloadPages()
-  }, [currentPage, currentProject, pages, totalPages, updatePage])
 
   // Auto-play functionality
   useEffect(() => {
@@ -165,9 +129,6 @@ export function FlipbookViewer({ className }: FlipbookViewerProps) {
   const canGoPrev = currentPage > 0
   const canGoNext = currentPage < totalPages - 1
 
-  // Get rendered pages for flipbook
-  const renderedPages = pages.filter(p => p.isRendered && p.imageData)
-
   return (
     <div
       ref={containerRef}
@@ -198,7 +159,7 @@ export function FlipbookViewer({ className }: FlipbookViewerProps) {
           )}
 
           {/* MagazineBook from react-magazine package */}
-          {renderedPages.length > 0 ? (
+          {pages.length > 0 ? (
             <MagazineBook
               ref={flipBookRef}
               width={config?.width ?? 400}
@@ -234,9 +195,9 @@ export function FlipbookViewer({ className }: FlipbookViewerProps) {
                     justifyContent: 'center',
                   }}
                 >
-                  {page.imageData ? (
+                  {page.imageUrl ? (
                     <img
-                      src={page.imageData}
+                      src={page.imageUrl}
                       alt={`Page ${page.pageNumber}`}
                       style={{
                         maxWidth: '100%',
@@ -324,19 +285,6 @@ export function FlipbookViewer({ className }: FlipbookViewerProps) {
                   <Pause className="h-4 w-4" />
                 ) : (
                   <Play className="h-4 w-4" />
-                )}
-              </Button>
-            )}
-            {config?.enableSound !== undefined && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => useFlipbookStore.getState().updateConfig({ enableSound: !config.enableSound })}
-              >
-                {config.enableSound ? (
-                  <Volume2 className="h-4 w-4" />
-                ) : (
-                  <VolumeX className="h-4 w-4" />
                 )}
               </Button>
             )}

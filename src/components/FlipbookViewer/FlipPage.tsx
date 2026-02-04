@@ -1,10 +1,12 @@
 import { motion, type Variants } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { PDFPage, FlipAnimation } from '@/store/flipbook-store'
+import type { PageData } from '@/services/api'
+
+type FlipAnimation = 'hard' | 'soft' | 'fade' | 'vertical'
 
 interface FlipPageProps {
-  page: PDFPage | undefined
+  page: PageData | undefined
   pageNumber: number
   position: 'left' | 'right'
   isFlipping: boolean
@@ -24,8 +26,8 @@ export function FlipPage({
   showPageNumber,
   totalPages,
 }: FlipPageProps) {
-  const isLoading = page?.isLoading || (!page?.imageData && page !== undefined)
-  const imageData = page?.imageData
+  const isLoading = !page?.imageUrl && page !== undefined
+  const imageUrl = page?.imageUrl
 
   const getFlipVariants = (): Variants => {
     switch (flipAnimation) {
@@ -99,9 +101,9 @@ export function FlipPage({
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             <span className="text-sm text-muted-foreground">Loading page {pageNumber}...</span>
           </div>
-        ) : imageData ? (
+        ) : imageUrl ? (
           <img
-            src={imageData}
+            src={imageUrl}
             alt={`Page ${pageNumber}`}
             className="max-w-full max-h-full object-contain"
             draggable={false}

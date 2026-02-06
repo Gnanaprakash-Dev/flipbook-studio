@@ -162,7 +162,7 @@ export function FlipbookViewer({ className }: FlipbookViewerProps) {
           {pages.length > 0 ? (
             <MagazineBook
               ref={flipBookRef}
-              width={config?.width ?? 400}
+              width={config?.width ?? 500}
               height={config?.height ?? 600}
               minWidth={300}
               maxWidth={1000}

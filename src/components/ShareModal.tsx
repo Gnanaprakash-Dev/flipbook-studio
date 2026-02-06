@@ -62,7 +62,7 @@ export function ShareModal({ isOpen, onClose }: ShareModalProps) {
           exit={{ scale: 0.95, opacity: 0 }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-blue-500/20">
+          <div className="flex items-center justify-between p-4  py-2 border-b border-blue-500/20">
             <h2 className="text-lg font-semibold text-white">Share Flipbook</h2>
             <Button
               variant="ghost"

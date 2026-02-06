@@ -8,6 +8,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/editor" element={<EditorPage />} />
+        <Route path="/editor/:id" element={<EditorPage />} />
         <Route path="/view/:id" element={<EditorPage />} />
       </Routes>
     </BrowserRouter>

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Upload, FileText, AlertCircle, Loader2, CheckCircle } from 'lucide-react'
+import { Upload, FileText, AlertCircle, Loader2, CheckCircle, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useFlipbookStore } from '@/store/flipbook-store'
@@ -20,13 +20,14 @@ import { useFlipbookStore } from '@/store/flipbook-store'
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 
 interface UploadZoneProps {
-  onUploadComplete?: () => void
+  onUploadComplete?: (id: string) => void
 }
 
 export function UploadZone({ onUploadComplete }: UploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [uploadComplete, setUploadComplete] = useState(false)
+  // 'idle' → 'uploading' → 'completing' (100% visible) → 'done' (checkmark)
+  const [phase, setPhase] = useState<'idle' | 'uploading' | 'completing' | 'done'>('idle')
 
   const {
     isUploading,
@@ -56,21 +57,24 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
     async (file: File) => {
       setSelectedFile(file)
       setUploadError(null)
-      setUploadComplete(false)
+      setPhase('uploading')
 
       try {
-        // Upload to backend
-        await uploadPdf(file)
+        // Upload to backend — resolves after server finishes processing
+        const magazine = await uploadPdf(file)
+        const magazineId = magazine.id || magazine._id
 
-        // Show success state briefly
-        setUploadComplete(true)
-
-        // Navigate after short delay
+        // Show bar at 100% for 1s so the user sees it complete
+        setPhase('completing')
         setTimeout(() => {
-          onUploadComplete?.()
-        }, 500)
+          setPhase('done')
+          // Navigate after showing success briefly
+          setTimeout(() => {
+            onUploadComplete?.(magazineId)
+          }, 600)
+        }, 1000)
       } catch (error) {
-        // Error is already set in store
+        setPhase('idle')
         console.error('Upload error:', error)
       }
     },
@@ -126,7 +130,7 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
     [handleUpload, setUploadError]
   )
 
-  const isWorking = isUploading
+  const isWorking = isUploading || phase === 'uploading' || phase === 'completing'
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -166,8 +170,8 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
         )}
 
         <AnimatePresence mode="wait">
-          {/* Uploading State */}
-          {isWorking && !uploadComplete ? (
+          {/* Phase: uploading — file sending + server processing */}
+          {phase === 'uploading' ? (
             <motion.div
               key="uploading"
               initial={{ opacity: 0 }}
@@ -176,12 +180,32 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
               className="flex flex-col items-center gap-4"
             >
               <div className="relative">
-                <Loader2 className="w-12 h-12 text-blue-400 animate-spin" />
-                <div className="absolute inset-0 w-12 h-12 bg-blue-500/20 blur-xl rounded-full" />
+                {uploadProgress >= 95 ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                    >
+                      <Sparkles className="w-12 h-12 text-purple-400" />
+                    </motion.div>
+                    <motion.div
+                      animate={{ scale: [1, 1.4, 1], opacity: [0.2, 0.5, 0.2] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                      className="absolute inset-0 w-12 h-12 bg-purple-500/20 blur-xl rounded-full"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Loader2 className="w-12 h-12 text-blue-400 animate-spin" />
+                    <div className="absolute inset-0 w-12 h-12 bg-blue-500/20 blur-xl rounded-full" />
+                  </>
+                )}
               </div>
               <div className="text-center">
                 <p className="font-medium text-white">
-                  Uploading & Processing...
+                  {uploadProgress < 95
+                    ? 'Uploading your PDF...'
+                    : 'Processing pages...'}
                 </p>
                 {selectedFile && (
                   <p className="text-sm text-blue-200/60 mt-1">
@@ -189,28 +213,89 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
                   </p>
                 )}
                 <p className="text-xs text-purple-300/50 mt-2">
-                  This may take a moment for large PDFs
+                  {uploadProgress < 95
+                    ? 'Sending file to server'
+                    : 'Converting PDF pages — this may take a moment'}
                 </p>
               </div>
               <div className="w-full max-w-xs">
-                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden relative">
+                  {/* Actual progress fill — never reaches 100% until API responds */}
                   <motion.div
-                    className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                    className="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-500"
                     initial={{ width: 0 }}
-                    animate={{ width: `${uploadProgress}%` }}
-                    transition={{ duration: 0.3 }}
+                    animate={{ width: uploadProgress >= 95 ? '95%' : `${uploadProgress}%` }}
+                    transition={{ duration: 0.4, ease: 'easeOut' }}
                   />
+                  {/* Shimmer overlay when processing — shows activity without filling bar */}
+                  {uploadProgress >= 95 && (
+                    <motion.div
+                      className="absolute inset-0 rounded-full"
+                      style={{
+                        background: 'linear-gradient(90deg, transparent 0%, rgba(168,85,247,0.4) 50%, transparent 100%)',
+                        backgroundSize: '50% 100%',
+                      }}
+                      animate={{ backgroundPosition: ['-50% 0%', '150% 0%'] }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                    />
+                  )}
                 </div>
                 <p className="text-xs text-purple-300/50 text-center mt-2">
-                  {uploadProgress}% uploaded
+                  {uploadProgress < 95
+                    ? `${uploadProgress}% uploaded`
+                    : 'Almost there — processing pages...'}
                 </p>
               </div>
             </motion.div>
 
-          /* Success State */
-          ) : uploadComplete ? (
+          /* Phase: completing — bar fills to 100%, visible for 1 second */
+          ) : phase === 'completing' ? (
             <motion.div
-              key="success"
+              key="completing"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center gap-4"
+            >
+              <div className="relative">
+                <motion.div
+                  initial={{ scale: 0.5 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 200, damping: 12 }}
+                >
+                  <CheckCircle className="w-12 h-12 text-green-400" />
+                </motion.div>
+                <motion.div
+                  animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.6, 0.3] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                  className="absolute inset-0 w-12 h-12 bg-green-500/20 blur-xl rounded-full"
+                />
+              </div>
+              <p className="font-medium text-green-400">Upload Complete!</p>
+              {selectedFile && (
+                <p className="text-sm text-blue-200/60">
+                  {selectedFile.name}
+                </p>
+              )}
+              <div className="w-full max-w-xs">
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-400"
+                    initial={{ width: '95%' }}
+                    animate={{ width: '100%' }}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                  />
+                </div>
+                <p className="text-xs text-green-400/70 text-center mt-2 font-medium">
+                  100% — Done!
+                </p>
+              </div>
+            </motion.div>
+
+          /* Phase: done — redirect message */
+          ) : phase === 'done' ? (
+            <motion.div
+              key="done"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}

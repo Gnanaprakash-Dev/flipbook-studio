@@ -63,8 +63,8 @@ interface FlipbookState {
 
 // Default config exported for use in components
 export const defaultConfig: MagazineConfig = {
-  width: 400,
-  height: 500,
+  width: 450,
+  height: 630,
   flipAnimation: 'soft',
   flipSpeed: 1000,
   showShadow: true,

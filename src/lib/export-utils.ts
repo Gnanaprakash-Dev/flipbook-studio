@@ -5,14 +5,12 @@ import type { Magazine, MagazineConfig } from '@/services/api'
 /**
  * Export Utils
  *
- * Generate downloadable flipbook packages.
- * Now works with Cloudinary URLs instead of base64 data.
+ * Generate downloadable flipbook packages using turn.js for flip animation
+ * with the EditorPage UI design.
  */
 
 /**
- * Generate single HTML file package
- *
- * Downloads images from Cloudinary and embeds as base64.
+ * Generate single HTML file package with embedded base64 images.
  */
 export async function generateHTMLPackage(
   project: Magazine,
@@ -22,28 +20,22 @@ export async function generateHTMLPackage(
 
   const { config, pages, name } = project
 
-  // Download and convert images to base64
   onProgress?.(10)
   const pageImages: string[] = []
 
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i]
     try {
-      // Fetch image from Cloudinary
       const response = await fetch(page.imageUrl)
       const blob = await response.blob()
-
-      // Convert to base64
       const base64 = await new Promise<string>((resolve) => {
         const reader = new FileReader()
         reader.onloadend = () => resolve(reader.result as string)
         reader.readAsDataURL(blob)
       })
-
       pageImages.push(base64)
     } catch (error) {
       console.error(`Failed to fetch page ${i + 1}:`, error)
-      // Use placeholder for failed pages
       pageImages.push('')
     }
 
@@ -56,7 +48,6 @@ export async function generateHTMLPackage(
 
   onProgress?.(90)
 
-  // Create and download the HTML file
   const blob = new Blob([htmlContent], { type: 'text/html' })
   saveAs(blob, `${sanitizeFilename(name)}_flipbook.html`)
 
@@ -64,7 +55,7 @@ export async function generateHTMLPackage(
 }
 
 /**
- * Generate ZIP package with separate files
+ * Generate ZIP package with separate files.
  */
 export async function generateZipPackage(
   project: Magazine,
@@ -75,22 +66,29 @@ export async function generateZipPackage(
 
   onProgress?.(5)
 
-  // Create images folder and download images
-  const imagesFolder = zip.folder('images')
+  const imagesFolder = zip.folder('images')!
   const imageNames: string[] = []
 
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i]
     try {
-      // Fetch image from Cloudinary
-      const response = await fetch(page.imageUrl)
-      const blob = await response.blob()
+      const response = await fetch(page.imageUrl, { mode: 'cors' })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const arrayBuffer = await response.arrayBuffer()
 
-      const imageName = `page_${(i + 1).toString().padStart(3, '0')}.jpg`
+      // Detect extension from content-type or URL
+      const contentType = response.headers.get('content-type') || ''
+      let ext = 'jpg'
+      if (contentType.includes('png')) ext = 'png'
+      else if (contentType.includes('webp')) ext = 'webp'
+
+      const imageName = `page_${(i + 1).toString().padStart(3, '0')}.${ext}`
       imageNames.push(imageName)
-      imagesFolder?.file(imageName, blob)
+      imagesFolder.file(imageName, arrayBuffer, { binary: true })
     } catch (error) {
       console.error(`Failed to fetch page ${i + 1}:`, error)
+      // Add a placeholder so page count stays consistent
+      imageNames.push('')
     }
 
     onProgress?.(5 + (i / pages.length) * 50)
@@ -98,66 +96,55 @@ export async function generateZipPackage(
 
   onProgress?.(55)
 
-  // Generate HTML with relative image paths
+  // Filter out failed images and build HTML with working ones
+  const validImages = imageNames
+    .filter((n) => n !== '')
+    .map((n) => `images/${n}`)
+
   const htmlContent = generateFlipbookHTML(
     name,
     config,
-    imageNames.map((n) => `images/${n}`),
-    false
+    validImages
   )
-
   zip.file('index.html', htmlContent)
-
-  onProgress?.(70)
-
-  // Generate CSS
-  const cssContent = generateFlipbookCSS(config)
-  zip.file('styles.css', cssContent)
-
-  // Generate JS
-  const jsContent = generateFlipbookJS(config, imageNames.length)
-  zip.file('script.js', jsContent)
 
   onProgress?.(85)
 
-  // Generate and download ZIP
   const content = await zip.generateAsync({ type: 'blob' })
   saveAs(content, `${sanitizeFilename(name)}_flipbook.zip`)
 
   onProgress?.(100)
 }
 
-/**
- * Sanitize filename
- */
 function sanitizeFilename(name: string): string {
   return name.replace(/[^a-z0-9]/gi, '_').toLowerCase()
 }
 
 /**
- * Generate HTML content
+ * Generate full HTML with turn.js flip animation + EditorPage UI.
  */
 function generateFlipbookHTML(
   title: string,
   config: MagazineConfig,
-  images: string[],
-  embedded: boolean = true
+  images: string[]
 ): string {
-  const styles = embedded
-    ? `<style>${generateFlipbookCSS(config)}</style>`
-    : '<link rel="stylesheet" href="styles.css">'
-  const scripts = embedded
-    ? `<script>${generateFlipbookJS(config, images.length)}</script>`
-    : '<script src="script.js"></script>'
+  const pageWidth = 450
+  const pageHeight = 632
+  const bookWidth = pageWidth * 2
+  const bookHeight = pageHeight
 
   const pageElements = images
     .map(
       (img, i) => `
-      <div class="page" data-page="${i + 1}">
-        <img src="${img}" alt="Page ${i + 1}" loading="lazy" />
-        ${config.showPageNumbers ? `<span class="page-number">${i + 1}</span>` : ''}
-      </div>
-    `
+        <div class="page">
+          <img src="${img}" alt="Page ${i + 1}" />
+        </div>`
+    )
+    .join('\n')
+
+  const dotElements = images
+    .map(
+      (_, i) => `<div class="dot${i === 0 ? ' active' : ''}" data-dot="${i}"></div>`
     )
     .join('\n')
 
@@ -167,235 +154,433 @@ function generateFlipbookHTML(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title} - Flipbook</title>
-  ${styles}
-</head>
-<body>
-  <div class="flipbook-container" style="background-color: ${config.backgroundColor}">
-    <div class="flipbook" id="flipbook">
-      ${pageElements}
-    </div>
-
-    <div class="navigation">
-      <button class="nav-btn prev" onclick="prevPage()">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M15 18l-6-6 6-6"/>
-        </svg>
-      </button>
-      <span class="page-info" id="pageInfo">1 / ${images.length}</span>
-      <button class="nav-btn next" onclick="nextPage()">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 18l6-6-6-6"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-
-  ${scripts}
-</body>
-</html>`
-}
-
-/**
- * Generate CSS content
- */
-function generateFlipbookCSS(config: MagazineConfig): string {
-  return `
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"><\/script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/3/turn.min.js"><\/script>
+  <style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { overflow: hidden; height: 100vh; }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.flipbook-container {
-  width: 100%;
-  min-height: 100vh;
+/* === Scene layout === */
+.scene {
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.flipbook {
   position: relative;
-  width: ${config.pageLayout === 'double' ? config.width * 2 : config.width}px;
-  height: ${config.height}px;
-  max-width: 100%;
-  perspective: 2000px;
-  display: flex;
-  ${config.showShadow ? `box-shadow: 0 20px 60px rgba(0,0,0,${config.shadowOpacity});` : ''}
-  border-radius: 4px;
   overflow: hidden;
 }
 
-.page {
+/* Scenic background */
+.bg-image {
   position: absolute;
-  width: ${config.pageLayout === 'double' ? '50%' : '100%'};
-  height: 100%;
-  background: white;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  transform-style: preserve-3d;
-  transition: transform ${config.flipSpeed}ms cubic-bezier(0.4, 0, 0.2, 1);
+  inset: 0;
+  background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80');
+  background-size: cover;
+  background-position: center;
 }
-
-.page.active {
-  display: flex;
-}
-
-.page.left {
-  left: 0;
-  transform-origin: right center;
-}
-
-.page.right {
-  right: 0;
-  transform-origin: left center;
-}
-
-.page img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-.page-number {
+.bg-overlay {
   position: absolute;
-  bottom: 10px;
-  font-size: 12px;
-  color: #666;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
 }
 
-.page.left .page-number {
-  left: 15px;
-}
-
-.page.right .page-number {
-  right: 15px;
-}
-
-.navigation {
+/* === Header — frosted glass === */
+.header {
+  height: 48px;
   display: flex;
   align-items: center;
-  gap: 20px;
-  margin-top: 20px;
-  padding: 10px 20px;
-  background: rgba(255,255,255,0.9);
-  border-radius: 50px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  justify-content: space-between;
+  padding: 0 16px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 20;
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
 }
-
-.nav-btn {
-  width: 40px;
-  height: 40px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
+.header-left {
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: background 0.2s;
+  gap: 8px;
 }
-
-.nav-btn:hover {
-  background: rgba(0,0,0,0.05);
-}
-
-.nav-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.page-info {
+.header-title {
   font-size: 14px;
-  color: #666;
-  min-width: 80px;
-  text-align: center;
+  font-weight: 500;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+.header-pages {
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
-@media (max-width: 768px) {
-  .flipbook {
-    width: 100%;
-    height: auto;
-    aspect-ratio: ${config.pageLayout === 'double' ? config.width * 2 : config.width} / ${config.height};
+/* === Main content === */
+.main {
+  flex: 1;
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Book wrapper — holds arrows + book + edges */
+.book-wrapper {
+  position: relative;
+  transition: margin-left 0.6s ease;
+}
+
+/* === Navigation arrows === */
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  padding: 4px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: opacity 0.3s, color 0.2s;
+}
+.arrow:hover { color: white; }
+.arrow.hidden { opacity: 0; pointer-events: none; }
+.arrow-left { left: -64px; }
+.arrow-right { right: -64px; }
+
+/* === Book container === */
+.book-container {
+  position: relative;
+}
+
+/* turn.js flipbook */
+#flipbook {
+  width: ${bookWidth}px;
+  height: ${bookHeight}px;
+  ${config.showShadow ? `box-shadow: 0 20px 60px rgba(0,0,0,${config.shadowOpacity || 0.3});` : ''}
+}
+#flipbook .page {
+  background: #fff;
+  overflow: hidden;
+}
+#flipbook .page img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* === 3D Page edges === */
+.edge {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+  transition: width 0.5s ease;
+}
+.edge-right {
+  right: 0;
+  transform: translateX(100%);
+}
+.edge-left {
+  left: 0;
+  transform: translateX(-100%);
+}
+.edge-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: 0 3px 3px 0;
+  box-shadow: 3px 2px 8px rgba(0,0,0,0.18), 1px 0 2px rgba(0,0,0,0.08);
+  background: linear-gradient(to right, #e8e5e0, #f0ede8 40%, #ebe8e3);
+}
+.edge-left .edge-bg {
+  border-radius: 3px 0 0 3px;
+  box-shadow: -3px 2px 8px rgba(0,0,0,0.18), -1px 0 2px rgba(0,0,0,0.08);
+  background: linear-gradient(to left, #e8e5e0, #f0ede8 40%, #ebe8e3);
+}
+
+/* Edge page lines */
+.edge-line {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  width: 1px;
+}
+.edge-line-dark { background: rgba(0,0,0,0.06); }
+.edge-line-light { background: rgba(255,255,255,0.5); }
+.edge-highlight-right {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.25) 50%, rgba(0,0,0,0.06));
+  border-radius: 0 3px 3px 0;
+}
+.edge-highlight-left {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: linear-gradient(to left, transparent, rgba(255,255,255,0.25) 50%, rgba(0,0,0,0.06));
+  border-radius: 3px 0 0 3px;
+}
+
+/* === Bottom bar === */
+.bottom-bar {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 24px;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.page-counter {
+  position: absolute;
+  left: 24px;
+  font-size: 14px;
+  color: rgba(255,255,255,0.8);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.3);
+  transition: all 0.3s;
+  cursor: pointer;
+}
+.dot:hover { background: rgba(255,255,255,0.5); }
+.dot.active {
+  width: 24px;
+  height: 8px;
+  background: white;
+}
+
+@media (max-width: 950px) {
+  .arrow-left { left: -40px; }
+  .arrow-right { right: -40px; }
+  .arrow svg { width: 32px; height: 32px; }
+  #flipbook {
+    width: 90vw !important;
+    height: auto !important;
   }
 }
-`
-}
+  </style>
+</head>
+<body>
+  <div class="scene">
+    <div class="bg-image"></div>
+    <div class="bg-overlay"></div>
 
-/**
- * Generate JS content
- */
-function generateFlipbookJS(config: MagazineConfig, totalPages: number): string {
-  return `
-let currentPage = 0;
-const totalPages = ${totalPages};
-const isDoubleLayout = ${config.pageLayout === 'double'};
-const flipSpeed = ${config.flipSpeed};
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <span class="header-title">${title}</span>
+        <span class="header-pages">${images.length} pages</span>
+      </div>
+    </header>
 
-function updateDisplay() {
-  const pages = document.querySelectorAll('.page');
-  const pageInfo = document.getElementById('pageInfo');
+    <!-- Main content -->
+    <div class="main">
+      <div class="book-wrapper" id="bookWrapper">
+        <!-- Left arrow -->
+        <button class="arrow arrow-left hidden" id="prevBtn">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
 
-  pages.forEach((page, index) => {
-    page.classList.remove('active', 'left', 'right');
+        <div class="book-container">
+          <div id="flipbook">
+            ${pageElements}
+          </div>
 
-    if (isDoubleLayout) {
-      if (index === currentPage) {
-        page.classList.add('active', 'left');
-      } else if (index === currentPage + 1) {
-        page.classList.add('active', 'right');
+          <!-- 3D page edge — left -->
+          <div class="edge edge-left" id="edgeLeft" style="display:none;">
+            <div class="edge-bg"></div>
+          </div>
+
+          <!-- 3D page edge — right -->
+          <div class="edge edge-right" id="edgeRight">
+            <div class="edge-bg"></div>
+          </div>
+        </div>
+
+        <!-- Right arrow -->
+        <button class="arrow arrow-right" id="nextBtn">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="bottom-bar">
+      <span class="page-counter" id="pageCounter">1 / ${images.length}</span>
+      <div class="dots" id="dots">
+        ${dotElements}
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    var totalPages = ${images.length};
+    var pageWidth = ${pageWidth};
+    var bookWrapper = document.getElementById('bookWrapper');
+    var prevBtn = document.getElementById('prevBtn');
+    var nextBtn = document.getElementById('nextBtn');
+    var pageCounter = document.getElementById('pageCounter');
+    var edgeLeft = document.getElementById('edgeLeft');
+    var edgeRight = document.getElementById('edgeRight');
+    var dots = document.querySelectorAll('.dot');
+
+    function updateUI(page) {
+      var currentPage = page;
+
+      /* Arrows */
+      if (currentPage <= 1) {
+        prevBtn.className = 'arrow arrow-left hidden';
+      } else {
+        prevBtn.className = 'arrow arrow-left';
       }
-    } else {
-      if (index === currentPage) {
-        page.classList.add('active');
+      if (currentPage >= totalPages) {
+        nextBtn.className = 'arrow arrow-right hidden';
+      } else {
+        nextBtn.className = 'arrow arrow-right';
+      }
+
+      /* Page counter — spread display */
+      var spread;
+      if (currentPage <= 1) {
+        spread = '1';
+      } else if (currentPage >= totalPages) {
+        spread = '' + totalPages;
+      } else {
+        var left = currentPage;
+        var right = currentPage + 1;
+        if (right > totalPages) {
+          spread = '' + currentPage;
+        } else {
+          spread = left + '-' + right;
+        }
+      }
+      pageCounter.textContent = spread + ' / ' + totalPages;
+
+      /* Dots — highlight based on turn.js page (1-indexed) */
+      var dotIndex = Math.max(0, currentPage - 1);
+      for (var i = 0; i < dots.length; i++) {
+        dots[i].className = i === dotIndex ? 'dot active' : 'dot';
+      }
+
+      /* 3D page edges */
+      updateEdges(currentPage);
+
+      /* Cover centering */
+      if (currentPage <= 1) {
+        bookWrapper.style.marginLeft = '-' + pageWidth + 'px';
+      } else if (currentPage >= totalPages) {
+        bookWrapper.style.marginLeft = pageWidth + 'px';
+      } else {
+        bookWrapper.style.marginLeft = '0px';
       }
     }
-  });
 
-  if (isDoubleLayout) {
-    const endPage = Math.min(currentPage + 2, totalPages);
-    pageInfo.textContent = (currentPage + 1) + '-' + endPage + ' / ' + totalPages;
-  } else {
-    pageInfo.textContent = (currentPage + 1) + ' / ' + totalPages;
-  }
+    function updateEdges(page) {
+      var pagesOnLeft = Math.max(0, page - 1);
+      var pagesOnRight = Math.max(0, totalPages - page);
+      var maxEdge = 14;
+      var minEdge = 2;
 
-  document.querySelector('.prev').disabled = currentPage === 0;
-  document.querySelector('.next').disabled = currentPage >= totalPages - (isDoubleLayout ? 2 : 1);
-}
+      if (pagesOnLeft > 0 && totalPages > 1) {
+        var leftW = Math.round(minEdge + (pagesOnLeft / (totalPages - 1)) * (maxEdge - minEdge));
+        edgeLeft.style.width = leftW + 'px';
+        edgeLeft.style.display = 'block';
+      } else {
+        edgeLeft.style.display = 'none';
+      }
 
-function nextPage() {
-  const increment = isDoubleLayout ? 2 : 1;
-  if (currentPage < totalPages - increment) {
-    currentPage += increment;
-    updateDisplay();
-  }
-}
+      if (pagesOnRight > 0 && totalPages > 1) {
+        var rightW = Math.round(minEdge + (pagesOnRight / (totalPages - 1)) * (maxEdge - minEdge));
+        edgeRight.style.width = rightW + 'px';
+        edgeRight.style.display = 'block';
+      } else {
+        edgeRight.style.display = 'none';
+      }
+    }
 
-function prevPage() {
-  const decrement = isDoubleLayout ? 2 : 1;
-  if (currentPage >= decrement) {
-    currentPage -= decrement;
-    updateDisplay();
-  }
-}
+    /* Initialize turn.js */
+    $(document).ready(function() {
+      $('#flipbook').turn({
+        width: ${bookWidth},
+        height: ${bookHeight},
+        autoCenter: true,
+        display: 'double',
+        acceleration: true,
+        gradients: true,
+        elevation: 50,
+        when: {
+          turned: function(event, page) {
+            updateUI(page);
+          }
+        }
+      });
 
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'ArrowRight' || e.key === 'PageDown') nextPage();
-  if (e.key === 'ArrowLeft' || e.key === 'PageUp') prevPage();
-});
+      /* Initial UI state */
+      updateUI(1);
 
-document.addEventListener('DOMContentLoaded', updateDisplay);
-`
+      /* Arrow click handlers */
+      prevBtn.addEventListener('click', function() {
+        $('#flipbook').turn('previous');
+      });
+      nextBtn.addEventListener('click', function() {
+        $('#flipbook').turn('next');
+      });
+
+      /* Dot click to jump to page */
+      for (var i = 0; i < dots.length; i++) {
+        (function(index) {
+          dots[index].addEventListener('click', function() {
+            $('#flipbook').turn('page', index + 1);
+          });
+        })(i);
+      }
+
+      /* Keyboard navigation */
+      $(document).keydown(function(e) {
+        if (e.keyCode === 37) {
+          $('#flipbook').turn('previous');
+        } else if (e.keyCode === 39) {
+          $('#flipbook').turn('next');
+        }
+      });
+
+      /* Edge click to turn pages */
+      $('#flipbook').on('click', function(e) {
+        var offset = $(this).offset();
+        var clickX = e.pageX - offset.left;
+        var width = $(this).width();
+        if (clickX < width * 0.3) {
+          $('#flipbook').turn('previous');
+        } else if (clickX > width * 0.7) {
+          $('#flipbook').turn('next');
+        }
+      });
+    });
+  })();
+  <\/script>
+</body>
+</html>`
 }

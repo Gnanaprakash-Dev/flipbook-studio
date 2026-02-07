@@ -25,7 +25,7 @@ A modern web application that converts PDF documents into interactive, shareable
 ### Frontend
 | Technology | Purpose |
 |------------|---------|
-| React 18 | UI framework |
+| React 19 | UI framework |
 | TypeScript | Type safety |
 | Vite | Build tool & dev server |
 | Tailwind CSS | Styling |

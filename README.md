@@ -16,10 +16,9 @@ A modern web application that converts PDF documents into interactive, shareable
 
 ## Demo
 
-| Landing Page | Flipbook Viewer |
-|:---:|:---:|
-| <img src="https://staticwp.fliphtml5.com/learning-center/wp-content/uploads/2022/10/create-flipbook-from-PDF.gif" alt="Landing Page" style="max-width: 100%;" /> | <img src="https://staticwp.fliphtml5.com/learning-center/wp-content/uploads/2022/10/create-flipbook-from-PDF.gif" alt="Flipbook Viewer" style="max-width: 100%;" /> |
-| Animated starfield with radial marquee | Interactive page-turning with controls |
+<p align="center">
+  <img src="https://staticwp.fliphtml5.com/learning-center/wp-content/uploads/2022/10/create-flipbook-from-PDF.gif" alt="Flipbook Studio Demo" style="max-width: 100%;" />
+</p>
 
 ## Tech Stack
 

@@ -180,7 +180,7 @@ const previewBooks = [
 ]
 
 // 3D Animated Book Preview Component
-function PreviewBook({ book, index, isLast }: { book: typeof previewBooks[0]; index: number; isLast?: boolean }) {
+function PreviewBook({ book, index }: { book: typeof previewBooks[0]; index: number }) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-80px' })
 

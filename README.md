@@ -17,7 +17,8 @@ A modern web application that converts PDF documents into interactive, shareable
 ## Demo
 
 | Landing Page | Flipbook Viewer |
-|--------------|-----------------|
+|:---:|:---:|
+| <img src="https://staticwp.fliphtml5.com/learning-center/wp-content/uploads/2022/10/create-flipbook-from-PDF.gif" alt="Landing Page" style="max-width: 100%;" /> | <img src="https://staticwp.fliphtml5.com/learning-center/wp-content/uploads/2022/10/create-flipbook-from-PDF.gif" alt="Flipbook Viewer" style="max-width: 100%;" /> |
 | Animated starfield with radial marquee | Interactive page-turning with controls |
 
 ## Tech Stack
@@ -332,6 +333,47 @@ MIT
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+## Powered by react-magazine
+
+This project is built with [`react-magazine`](https://www.npmjs.com/package/react-magazine) — a React component for creating realistic magazine-style page flip animations with built-in controls and full TypeScript support.
+
+```bash
+npm i react-magazine
+```
+
+```tsx
+import { MagazineBook, Page } from 'react-magazine';
+
+const images = [
+  "https://picsum.photos/id/1/400/500",
+  "https://picsum.photos/id/2/400/500",
+  "https://picsum.photos/id/3/400/500",
+  "https://picsum.photos/id/4/400/500",
+];
+
+function App() {
+  return (
+    <MagazineBook width={400} height={500} showCover={true} showControls={true}>
+      {images.map((img, index) => (
+        <Page key={index} number={index + 1}>
+          <img
+            src={img}
+            alt={`Page ${index + 1}`}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        </Page>
+      ))}
+    </MagazineBook>
+  );
+}
+
+export default App;
+```
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Gnanaprakash-Dev/react-magazine/HEAD/video.gif" alt="react-magazine demo" style="max-width: 100%;" />
+</p>
 
 ## Acknowledgments
 

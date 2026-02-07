@@ -3,6 +3,12 @@
  * Full scroll-driven animations and effects
  */
 
+ .preveiw-option{
+  header{
+    display: none !important;
+  }
+}
+
 /* ========== CUSTOM CURSOR ========== */
 .custom-cursor-dot {
   position: fixed;
@@ -432,6 +438,23 @@
   from { transform: translateX(-100%); }
   to { transform: translateX(100%); }
 }
+
+.shelf-book-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.08) 45%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 55%,
+    transparent 60%
+  );
+  pointer-events: none;
+  opacity: 1;
+  animation: shine-sweep 2.5s ease-in-out infinite;
+}
+
 
 /* ========== FLOATING SHOWCASE ========== */
 .showcase-stack {

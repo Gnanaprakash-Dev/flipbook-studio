@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { UploadZone } from '@/components/UploadZone'
 import { useEffect, useRef, useState } from 'react'
-import { motion, useMotionValue, useSpring as useFramerSpring, useScroll, useTransform, useSpring, useInView } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, useSpring as useFramerSpring, useScroll, useTransform, useSpring, useInView } from 'framer-motion'
 import {
   Upload,
   Zap,
@@ -27,6 +27,15 @@ import {
   Building2,
   Newspaper,
   Heart,
+  Package,
+  Terminal,
+  Copy,
+  ExternalLink,
+  Code2,
+  Box,
+  Eye,
+  Library,
+  X,
 } from 'lucide-react'
 import '@/styles/landing-animations.css'
 
@@ -171,7 +180,7 @@ const previewBooks = [
 ]
 
 // 3D Animated Book Preview Component
-function PreviewBook({ book, index }: { book: typeof previewBooks[0]; index: number }) {
+function PreviewBook({ book, index, isLast }: { book: typeof previewBooks[0]; index: number; isLast?: boolean }) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-80px' })
 
@@ -206,7 +215,7 @@ function PreviewBook({ book, index }: { book: typeof previewBooks[0]; index: num
               <img src={book.pageImages[1]} alt={`${book.title} page 2`} className="preview-page-img" loading="lazy" />
             </div>
             <div
-              className="preview-book-page preview-page-flip-1"
+              // className="preview-book-page preview-page-flip-1"
               style={{ animationDelay: `${index * 1.2}s` }}
             >
               <img src={book.pageImages[0]} alt={`${book.title} page 1`} className="preview-page-img" loading="lazy" />
@@ -758,6 +767,8 @@ export function LandingPage() {
     document.getElementById('upload-section')?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
   return (
     <div ref={containerRef} className="min-h-screen bg-[#050508] text-white overflow-x-hidden cursor-none">
       {/* Custom Cursor */}
@@ -897,8 +908,204 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Digital Magazine Shelf */}
+      <section className="py-32 px-6 relative z-10 overflow-hidden">
+        {/* Background */}
+        <div className="absolute inset-0">
+          <div
+            className="absolute inset-0"
+            // style={{
+            //   background: 'radial-gradient(ellipse at 50% 0%, rgba(59, 130, 246, 0.12) 0%, transparent 55%), radial-gradient(ellipse at 50% 100%, rgba(139, 92, 246, 0.1) 0%, transparent 55%)',
+            // }}
+          />
+        </div>
+
+        <div className="max-w-6xl mx-auto relative">
+          {/* Section Header */}
+          <ParallaxSection offset={30}>
+            <div className="text-center mb-10">
+              <motion.span
+                initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ type: 'spring', stiffness: 200 }}
+                className="inline-block px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm font-medium mb-4"
+              >
+                <Library className="w-3.5 h-3.5 inline-block mr-1.5 -mt-0.5" />
+                Showcase
+              </motion.span>
+              <h2 className="text-4xl md:text-6xl font-black">
+                <AnimatedText text="Digital Magazine " />
+                <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent">Shelf</span>
+              </h2>
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3 }}
+                className="text-gray-400 text-lg mt-4 max-w-2xl mx-auto"
+              >
+                Beautiful flipbooks created with FlipBook Studio — browse the collection
+              </motion.p>
+            </div>
+          </ParallaxSection>
+
+          {/* Shelf Container */}
+          <div className="flex flex-col gap-0">
+            {/* Shelf Row 1 */}
+            <div className="relative">
+              {/* Books */}
+              <div className="flex justify-center gap-6 md:gap-10 pb-4 relative z-10">
+                {[
+                  {
+                    src: 'https://anyflip.com/images/home/20240325/Southern-Lady-magazine.png',
+                    alt: 'Southern Lady Magazine',
+                    previewUrl: 'https://flipbook-studio.netlify.app/view/4L6M2Mf3cd',
+                    delay: 0,
+                  },
+                  {
+                    src: 'https://anyflip.com/images/home/20240325/The-Guardian-Feast-magazine.png',
+                    alt: 'The Guardian Feast Magazine',
+                    previewUrl: 'https://flipbook-studio.netlify.app/view/4L6M2Mf3cd',
+                    delay: 0.15,
+                  },
+                  {
+                    src: 'https://anyflip.com/images/home/20240325/Taste-of-Latvia-Lactose-magazine.png',
+                    alt: 'Taste of Latvia Magazine',
+                    previewUrl: 'https://flipbook-studio.netlify.app/view/4L6M2Mf3cd',
+                    delay: 0.3,
+                  },
+                ].map((book, index) => (
+                  <motion.div
+                    key={book.alt}
+                    onClick={() => setPreviewUrl(book.previewUrl)}
+                    initial={{ opacity: 0, y: 30, rotateY: -15 }}
+                    whileInView={{ opacity: 1, y: 0, rotateY: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.7, delay: index * 0.2 + 0.4, ease: 'easeOut' }}
+                    whileHover={{ scale: 1.05, rotateY: 8, rotateX: -5 }}
+                    className="relative group cursor-pointer"
+                    style={{ perspective: '800px' }}
+                  >
+                    {/* Book shadow */}
+                    <div className="absolute -bottom-3 left-2 right-2 h-6 bg-black/40 rounded-full blur-lg group-hover:bg-black/60 transition-all" />
+                    {/* Book cover */}
+                    <div className="relative w-[100px] h-[132px] sm:w-[130px] sm:h-[170px] md:w-[130px] md:h-[160px] overflow-hidden shadow-2xl shadow-black/50 border border-white/10 -bottom-20">
+                      <img
+                        src={book.src}
+                        alt={book.alt}
+                        className="w-full h-full  transition-transform duration-500 group-hover:scale-110"
+                        loading="lazy"
+                      />
+                      <div className="shelf-book-shine" />
+                      {/* Hover overlay */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-300 flex items-center justify-center">
+                        <div className="opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300">
+                          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
+                            <Eye className="w-5 h-5 text-white" />
+                          </div>
+                        </div>
+                      </div>
+                      {/* Spine edge */}
+                      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-white/20 via-white/5 to-white/20" />
+                      {/* Shine effect */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+              {/* Shelf image */}
+              <div className="mx-auto" style={{ maxWidth: '620px' }}>
+                <img
+                  src="https://anyflip.com/images/home/shelf-2.png"
+                  alt="Bookshelf"
+                  className="w-full h-auto"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+
+            {/* Spacer */}
+
+            {/* Shelf Row 2 */}
+            <div className="relative">
+              {/* Books */}
+              <div className="flex justify-center gap-6 md:gap-10 pb-4 relative z-10">
+                {[
+                  {
+                    src: 'https://anyflip.com/images/home/20240325/Country-Style-Dream-Gardens-magazine.png',
+                    alt: 'Country Style Dream Gardens',
+                    previewUrl: 'https://flipbook-studio.netlify.app/view/4L6M2Mf3cd',
+                    delay: 0.1,
+                  },
+                  {
+                    src: 'https://anyflip.com/images/home/20240325/Modern-Luxury-Interiors-South-Florida-magazine.png',
+                    alt: 'Modern Luxury Interiors',
+                    previewUrl: 'https://flipbook-studio.netlify.app/view/4L6M2Mf3cd',
+                    delay: 0.25,
+                  },
+                  {
+                    src: 'https://anyflip.com/images/home/20240325/British-Muslim-Spring-magazine.png',
+                    alt: 'British Muslim Magazine',
+                    previewUrl: 'https://flipbook-studio.netlify.app/view/4L6M2Mf3cd',
+                    delay: 0.4,
+                  },
+                ].map((book, index) => (
+                  <motion.div
+                    key={book.alt}
+                    onClick={() => setPreviewUrl(book.previewUrl)}
+                    initial={{ opacity: 0, y: 30, rotateY: -15 }}
+                    whileInView={{ opacity: 1, y: 0, rotateY: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.7, delay: index * 0.2 + 0.4, ease: 'easeOut' }}
+                    whileHover={{ scale: 1.05, rotateY: 8, rotateX: -5 }}
+                    className="relative group cursor-pointer"
+                    style={{ perspective: '800px' }}
+                  >
+                    {/* Book shadow */}
+                    <div className="absolute -bottom-3 left-2 right-2 h-6 bg-black/40 rounded-full blur-lg group-hover:bg-black/60 transition-all" />
+                    {/* Book cover */}
+                    <div className="relative w-[100px] h-[132px] sm:w-[130px] sm:h-[170px] md:w-[130px] md:h-[160px] overflow-hidden shadow-2xl shadow-black/50 border border-white/10 -bottom-20">
+                      <img
+                        src={book.src}
+                        alt={book.alt}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        loading="lazy"
+                      />
+                      <div className="shelf-book-shine" />
+                      {/* Hover overlay */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-300 flex items-center justify-center">
+                        <div className="opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300">
+                          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
+                            <Eye className="w-5 h-5 text-white" />
+                          </div>
+                        </div>
+                      </div>
+                      {/* Spine edge */}
+                      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-white/20 via-white/5 to-white/20" />
+                      {/* Shine effect */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+              {/* Shelf image */}
+              <div className="mx-auto" style={{ maxWidth: '620px' }}>
+                <img
+                  src="https://anyflip.com/images/home/shelf-2.png"
+                  alt="Bookshelf"
+                  className="w-full h-auto"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
       {/* Flipbook Preview Results Section */}
-      <section className="py-28 px-6 relative z-10 overflow-hidden" style={{ perspective: '1200px' }}>
+      <section className="py-28 pt-10 px-6 relative z-10 overflow-hidden" style={{ perspective: '1200px' }}>
         {/* Background ambient effects */}
         <motion.div
           animate={{ scale: [1, 1.2, 1], opacity: [0.08, 0.15, 0.08] }}
@@ -1840,6 +2047,498 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Open Source Package - react-magazine */}
+      <section className="py-32 px-6 relative z-10 overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0">
+          <motion.div
+            animate={{ opacity: [0.03, 0.08, 0.03] }}
+            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute inset-0"
+            style={{
+              backgroundImage: 'radial-gradient(circle at 30% 50%, rgba(16, 185, 129, 0.15) 0%, transparent 50%), radial-gradient(circle at 70% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%)',
+            }}
+          />
+          {/* Floating code symbols */}
+          {['{ }', '< />', 'npm', '( )', '[ ]', '=> '].map((symbol, i) => (
+            <motion.span
+              key={`code-sym-${i}`}
+              className="absolute text-emerald-500/10 font-mono font-bold select-none pointer-events-none hidden md:block"
+              style={{
+                top: `${15 + (i * 13) % 70}%`,
+                left: `${5 + (i * 17) % 90}%`,
+                fontSize: `${18 + (i % 3) * 8}px`,
+              }}
+              animate={{
+                y: [0, -(20 + i * 5), 0],
+                opacity: [0.08, 0.2, 0.08],
+                rotate: [0, i % 2 === 0 ? 10 : -10, 0],
+              }}
+              transition={{ duration: 6 + i * 0.8, repeat: Infinity, ease: 'easeInOut', delay: i * 0.5 }}
+            >
+              {symbol}
+            </motion.span>
+          ))}
+        </div>
+
+        <div className="max-w-6xl mx-auto relative">
+          {/* Section Header */}
+          <ParallaxSection offset={30}>
+            <div className="text-center mb-16">
+              <motion.span
+                initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ type: 'spring', stiffness: 200 }}
+                className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-medium mb-4"
+              >
+                <Package className="w-3.5 h-3.5 inline-block mr-1.5 -mt-0.5" />
+                Open Source Package
+              </motion.span>
+              <h2 className="text-4xl md:text-6xl font-black">
+                <AnimatedText text="Powered by " />
+                <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">react-magazine</span>
+              </h2>
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3 }}
+                className="text-gray-400 text-lg mt-4 max-w-2xl mx-auto"
+              >
+                The engine behind FlipBook — a React component for creating realistic magazine-style page flip animations with built-in controls and full TypeScript support.
+              </motion.p>
+            </div>
+          </ParallaxSection>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            {/* Left: Demo GIF & Visual */}
+            <motion.div
+              initial={{ opacity: 0, x: -60, scale: 0.95 }}
+              whileInView={{ opacity: 1, x: 0, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="relative group"
+            >
+              {/* Glow behind the card */}
+              <motion.div
+                animate={{ scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute -inset-4 bg-gradient-to-br from-emerald-500/20 via-cyan-500/10 to-blue-500/20 rounded-3xl blur-2xl"
+              />
+              <div className="relative glass-card overflow-hidden rounded-2xl border border-emerald-500/20">
+                {/* Terminal-style header bar */}
+                <div className="flex items-center gap-2 px-4 py-3 bg-black/60 border-b border-white/5">
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                  </div>
+                  <span className="text-xs text-gray-500 font-mono ml-2">react-magazine demo</span>
+                </div>
+                {/* GIF */}
+                <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 to-black">
+                  <motion.img
+                    src="https://raw.githubusercontent.com/Gnanaprakash-Dev/react-magazine/HEAD/video.gif"
+                    alt="react-magazine demo"
+                    className="w-full h-auto"
+                    initial={{ scale: 1.05 }}
+                    whileInView={{ scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1.2 }}
+                  />
+                  {/* Subtle overlay gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right: Package Info & Install */}
+            <motion.div
+              initial={{ opacity: 0, x: 60 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="flex flex-col gap-6"
+            >
+              {/* Package name badge */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3 }}
+                className="flex items-center gap-3"
+              >
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                  <Box className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-white">react-magazine</h3>
+                  <p className="text-sm text-gray-400">Published on npm</p>
+                </div>
+              </motion.div>
+
+              {/* Feature highlights */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 }}
+                className="grid grid-cols-2 gap-3"
+              >
+                {[
+                  { icon: Sparkles, text: 'Realistic Page Flip', color: 'text-amber-400' },
+                  { icon: Code2, text: 'TypeScript Support', color: 'text-blue-400' },
+                  { icon: Smartphone, text: 'Touch & Swipe Ready', color: 'text-pink-400' },
+                  { icon: Zap, text: 'Built-in Controls', color: 'text-emerald-400' },
+                ].map((feature, i) => (
+                  <motion.div
+                    key={feature.text}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ type: 'spring', delay: 0.5 + i * 0.1 }}
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10"
+                  >
+                    <feature.icon className={`w-4 h-4 ${feature.color} flex-shrink-0`} />
+                    <span className="text-sm text-gray-300 font-medium">{feature.text}</span>
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              {/* Install command */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.6 }}
+                className="relative group/install"
+              >
+                <div className="flex items-center gap-3 px-5 py-4 rounded-xl bg-black/60 border border-emerald-500/20 font-mono text-sm backdrop-blur-sm">
+                  <Terminal className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <span className="text-gray-500">$</span>
+                  <span className="text-emerald-300 flex-1">npm i react-magazine</span>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => {
+                      navigator.clipboard.writeText('npm i react-magazine');
+                    }}
+                    className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-colors"
+                    title="Copy to clipboard"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </motion.button>
+                </div>
+                {/* Glow line under install */}
+                <motion.div
+                  animate={{ opacity: [0.3, 0.7, 0.3] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-emerald-500 to-transparent"
+                />
+              </motion.div>
+
+              {/* Stats row */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.7 }}
+                className="flex items-center gap-4 flex-wrap"
+              >
+                {[
+                  { label: 'React', icon: Code2, color: 'border-cyan-500/30 text-cyan-400' },
+                  { label: 'TypeScript', icon: FileText, color: 'border-blue-500/30 text-blue-400' },
+                  { label: 'Lightweight', icon: Zap, color: 'border-amber-500/30 text-amber-400' },
+                  { label: 'MIT License', icon: Lock, color: 'border-emerald-500/30 text-emerald-400' },
+                ].map((tag, i) => (
+                  <motion.span
+                    key={tag.label}
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ type: 'spring', delay: 0.8 + i * 0.08 }}
+                    whileHover={{ scale: 1.1 }}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border ${tag.color} text-xs font-medium`}
+                  >
+                    <tag.icon className="w-3 h-3" />
+                    {tag.label}
+                  </motion.span>
+                ))}
+              </motion.div>
+
+              {/* CTA buttons */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.8 }}
+                className="flex items-center gap-3 flex-wrap"
+              >
+                <motion.a
+                  href="https://www.npmjs.com/package/react-magazine"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold text-sm shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-shadow"
+                >
+                  <Package className="w-4 h-4" />
+                  View on npm
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </motion.a>
+                <motion.a
+                  href="https://github.com/Gnanaprakash-Dev/react-magazine"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/15 text-gray-300 hover:text-white font-semibold text-sm hover:border-white/30 transition-colors"
+                >
+                  <Github className="w-4 h-4" />
+                  GitHub Repo
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </motion.a>
+              </motion.div>
+            </motion.div>
+          </div>
+
+          {/* Bottom: Code snippet (left) + Image (right) */}
+          <div className="mt-16 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            {/* Left: App.tsx code snippet */}
+            <motion.div
+              initial={{ opacity: 0, x: -40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+            >
+              <div className="glass-card overflow-hidden rounded-2xl border border-emerald-500/10">
+                {/* Code header */}
+                <div className="flex items-center justify-between px-5 py-3 bg-black/60 border-b border-white/5">
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/70" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
+                    </div>
+                    <span className="text-xs text-gray-500 font-mono ml-2">App.tsx</span>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => {
+                      navigator.clipboard.writeText(
+                        `import { MagazineBook, Page } from 'react-magazine';\n\nconst images = [\n  "https://picsum.photos/id/1/400/500",\n  "https://picsum.photos/id/2/400/500",\n  "https://picsum.photos/id/3/400/500",\n  "https://picsum.photos/id/4/400/500",\n];\n\nfunction App() {\n  return (\n    <MagazineBook width={400} height={500} showCover={true} showControls={true}>\n      {images.map((img, index) => (\n        <Page key={index} number={index + 1}>\n          <img\n            src={img}\n            alt={\`Page \${index + 1}\`}\n            style={{ width: "100%", height: "100%", objectFit: "cover" }}\n          />\n        </Page>\n      ))}\n    </MagazineBook>\n  );\n}\n\nexport default App;`
+                      );
+                    }}
+                    className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-500 hover:text-emerald-400 hover:border-emerald-500/30 transition-colors"
+                    title="Copy code"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </motion.button>
+                </div>
+                {/* Code body */}
+                <div className="px-5 py-4 font-mono text-sm leading-relaxed overflow-x-auto">
+                  {/* import line */}
+                  <div>
+                    <span className="text-purple-400">import</span>
+                    <span className="text-gray-300">{' { '}</span>
+                    <span className="text-emerald-400">MagazineBook</span>
+                    <span className="text-gray-300">{', '}</span>
+                    <span className="text-emerald-400">Page</span>
+                    <span className="text-gray-300">{' } '}</span>
+                    <span className="text-purple-400">from</span>
+                    <span className="text-amber-300">{" 'react-magazine'"}</span>
+                    <span className="text-gray-500">;</span>
+                  </div>
+
+                  {/* images array */}
+                  <div className="mt-3">
+                    <span className="text-purple-400">const</span>
+                    <span className="text-blue-300"> images</span>
+                    <span className="text-gray-300">{' = ['}</span>
+                  </div>
+                  {[1, 2, 3, 4].map((id) => (
+                    <div key={id} className="ml-4">
+                      <span className="text-amber-300">{`"https://picsum.photos/id/${id}/400/500"`}</span>
+                      <span className="text-gray-500">,</span>
+                    </div>
+                  ))}
+                  <div>
+                    <span className="text-gray-300">{']'}</span>
+                    <span className="text-gray-500">;</span>
+                  </div>
+
+                  {/* function App */}
+                  <div className="mt-3">
+                    <span className="text-purple-400">function</span>
+                    <span className="text-blue-400"> App</span>
+                    <span className="text-gray-300">{'() {'}</span>
+                  </div>
+                  <div className="ml-4">
+                    <span className="text-purple-400">return</span>
+                    <span className="text-gray-300">{' ('}</span>
+                  </div>
+
+                  {/* MagazineBook opening tag */}
+                  <div className="ml-8">
+                    <span className="text-gray-300">{'<'}</span>
+                    <span className="text-emerald-400">MagazineBook</span>
+                  </div>
+                  <div className="ml-12">
+                    <span className="text-blue-300">width</span>
+                    <span className="text-gray-500">={'{'}</span>
+                    <span className="text-orange-300">400</span>
+                    <span className="text-gray-500">{'}'}</span>
+                    <span className="text-blue-300"> height</span>
+                    <span className="text-gray-500">={'{'}</span>
+                    <span className="text-orange-300">500</span>
+                    <span className="text-gray-500">{'}'}</span>
+                  </div>
+                  <div className="ml-12">
+                    <span className="text-blue-300">showCover</span>
+                    <span className="text-gray-500">={'{'}</span>
+                    <span className="text-orange-300">true</span>
+                    <span className="text-gray-500">{'}'}</span>
+                    <span className="text-blue-300"> showControls</span>
+                    <span className="text-gray-500">={'{'}</span>
+                    <span className="text-orange-300">true</span>
+                    <span className="text-gray-500">{'}'}</span>
+                  </div>
+                  <div className="ml-8">
+                    <span className="text-gray-300">{'>'}</span>
+                  </div>
+
+                  {/* .map callback */}
+                  <div className="ml-10">
+                    <span className="text-gray-500">{'{'}</span>
+                    <span className="text-blue-300">images</span>
+                    <span className="text-gray-300">.map</span>
+                    <span className="text-gray-300">{'((img, index) => ('}</span>
+                  </div>
+                  <div className="ml-12">
+                    <span className="text-gray-300">{'<'}</span>
+                    <span className="text-emerald-400">Page</span>
+                    <span className="text-blue-300"> key</span>
+                    <span className="text-gray-500">={'{'}</span>
+                    <span className="text-blue-300">index</span>
+                    <span className="text-gray-500">{'}'}</span>
+                    <span className="text-blue-300"> number</span>
+                    <span className="text-gray-500">={'{'}</span>
+                    <span className="text-blue-300">index</span>
+                    <span className="text-orange-300">{' + 1'}</span>
+                    <span className="text-gray-500">{'}'}</span>
+                    <span className="text-gray-300">{'>'}</span>
+                  </div>
+                  <div className="ml-14">
+                    <span className="text-gray-300">{'<'}</span>
+                    <span className="text-red-400">img</span>
+                    <span className="text-blue-300"> src</span>
+                    <span className="text-gray-500">={'{'}</span>
+                    <span className="text-blue-300">img</span>
+                    <span className="text-gray-500">{'}'}</span>
+                    <span className="text-blue-300"> alt</span>
+                    <span className="text-gray-500">={'{'}</span>
+                    <span className="text-amber-300">{"`Page ${index + 1}`"}</span>
+                    <span className="text-gray-500">{'}'}</span>
+                    <span className="text-gray-300">{' />'}</span>
+                  </div>
+                  <div className="ml-12">
+                    <span className="text-gray-300">{'</'}</span>
+                    <span className="text-emerald-400">Page</span>
+                    <span className="text-gray-300">{'>'}</span>
+                  </div>
+                  <div className="ml-10">
+                    <span className="text-gray-300">{'))}'}</span>
+                  </div>
+
+                  {/* Closing tags */}
+                  <div className="ml-8">
+                    <span className="text-gray-300">{'</'}</span>
+                    <span className="text-emerald-400">MagazineBook</span>
+                    <span className="text-gray-300">{'>'}</span>
+                  </div>
+                  <div className="ml-4">
+                    <span className="text-gray-300">{');'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-300">{'}'}</span>
+                  </div>
+
+                  {/* export */}
+                  <div className="mt-3">
+                    <span className="text-purple-400">export default</span>
+                    <span className="text-blue-400"> App</span>
+                    <span className="text-gray-500">;</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right: Flipbook preview image */}
+            <motion.div
+              initial={{ opacity: 0, x: 40, scale: 0.95 }}
+              whileInView={{ opacity: 1, x: 0, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+              className="relative group"
+            >
+              {/* Glow behind image */}
+              <motion.div
+                animate={{ scale: [1, 1.05, 1], opacity: [0.2, 0.4, 0.2] }}
+                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute -inset-4 bg-gradient-to-br from-cyan-500/20 via-emerald-500/10 to-blue-500/20 rounded-3xl blur-2xl"
+              />
+              <div className="relative glass-card overflow-hidden rounded-2xl border border-emerald-500/20 p-1">
+                {/* Browser-style header */}
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-black/50 rounded-t-xl">
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/70" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
+                  </div>
+                  <div className="flex-1 mx-3">
+                    <div className="bg-white/5 rounded-md px-3 py-1 text-[10px] text-gray-500 font-mono truncate">
+                      flipbook-studio.netlify.app/view/4L6M2Mf3cd
+                    </div>
+                  </div>
+                </div>
+                {/* Image */}
+                <motion.div
+                  className="relative overflow-hidden rounded-b-xl bg-gradient-to-br from-gray-900 to-black"
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ type: 'spring', stiffness: 300 }}
+                >
+                  <img
+                    src="https://images.ctfassets.net/xvqp5pvs1vfv/7B8z3QcdIvJNW41ghIzJMU/5ec903003bb2fa7a9b877f00246d72e4/Add_Links_to_a_PDF.png?fm=webp&w=1440"
+                    alt="Flipbook preview"
+                    className="w-full h-auto"
+                    loading="lazy"
+                  />
+                  {/* Subtle shine overlay */}
+                  <motion.div
+                    animate={{ x: ['-100%', '200%'] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', repeatDelay: 3 }}
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12 pointer-events-none"
+                  />
+                </motion.div>
+              </div>
+              {/* Caption */}
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.8 }}
+                className="text-center text-xs text-gray-500 mt-3 font-medium"
+              >
+                Interactive flipbook with realistic page-turn animations
+              </motion.p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA - 3D Immersive */}
       <section className="py-32 px-6 relative z-10 overflow-hidden cta-3d-scene">
         {/* Dot grid background with radial mask */}
@@ -2185,6 +2884,66 @@ export function LandingPage() {
           </motion.div>
         </div>
       </section>
+
+      {/* Flipbook Preview Modal */}
+      <AnimatePresence>
+        {previewUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8"
+            onClick={() => setPreviewUrl(null)}
+          >
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" />
+
+            {/* Modal content */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 30 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              className="relative w-full max-w-5xl h-[98vh] rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-black/50 bg-[#0a0a1a]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal header */}
+              <div className="flex items-center justify-between px-3 py-1.5 bg-black/60 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 rounded-full bg-red-500/80 cursor-pointer hover:bg-red-500" onClick={() => setPreviewUrl(null)} />
+                    <div className="w-2 h-2 rounded-full bg-yellow-500/80" />
+                    <div className="w-2 h-2 rounded-full bg-green-500/80" />
+                  </div>
+                  <div className="flex-1 mx-1">
+                    <div className="bg-white/5 rounded px-2 py-0.5 text-[10px] text-gray-500 font-mono truncate max-w-sm">
+                      {previewUrl}
+                    </div>
+                  </div>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setPreviewUrl(null)}
+                  className="w-6 h-6 rounded bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:border-white/30 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </motion.button>
+              </div>
+
+              {/* Iframe */}
+              <iframe
+                src={`${previewUrl}?embed=true`}
+                className="w-full h-[calc(100%)]"
+                style={{ border: 'none' }}
+                allowFullScreen
+                title="Flipbook Preview"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-white/5 relative z-10">
